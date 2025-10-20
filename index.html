@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>💌 Chúc mừng 20/10</title>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1:#fff0f6; --bg2:#ffd6e8; --pink1:#ff7aa2; --pink2:#ff9fc9; --deep:#b30059;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));font-family:Inter, system-ui, -apple-system,"Segoe UI", Roboto, 'Dancing Script', cursive;display:flex;align-items:center;justify-content:center;overflow:hidden}
+
+    /* Container */
+    .wrap{position:relative;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
+
+    /* Envelope */
+    .envelope{width:420px;height:300px;background:linear-gradient(180deg,var(--pink2),var(--pink1));border-radius:14px;box-shadow:0 18px 50px rgba(179,0,89,0.12);position:relative;cursor:pointer;transform-style:preserve-3d;transition:transform .6s ease}
+    .envelope:hover{transform:translateY(-6px)}
+
+    .flap{position:absolute;inset:0;clip-path:polygon(0 0,100% 0,50% 62%);background:linear-gradient(180deg,#ff9bb3,#ff6b8a);transform-origin:top center;transition:transform 1s cubic-bezier(.2,.9,.2,1);z-index:5}
+    .envelope.open .flap{transform:rotateX(180deg)}
+
+    .inner-card{position:absolute;left:50%;bottom:20px;transform:translateX(-50%) translateY(30%);width:86%;height:72%;background:#fff0f6;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,0.08);padding:18px;opacity:0;transition:all .9s ease .6s;z-index:3}
+    .envelope.open .inner-card{transform:translateX(-50%) translateY(-10%);opacity:1}
+
+    .inner-card h4{margin:0;color:var(--deep);font-family:'Dancing Script', cursive;font-size:20px}
+    .inner-card p{color:var(--deep);font-size:14px;line-height:1.45;margin-top:8px}
+
+    /* Message center after envelope disappears */
+    .message-center{position:absolute;left:50%;top:60%;transform:translate(-50%, 20%);width:min(720px,92vw);padding:28px;border-radius:12px;background:rgba(255,245,250,0.95);box-shadow:0 20px 60px rgba(179,0,89,0.08);text-align:center;opacity:0;pointer-events:none;transition:all .9s cubic-bezier(.2,.9,.2,1)}
+    .message-center.show{top:50%;transform:translate(-50%,-50%);opacity:1;pointer-events:auto}
+    .message-center h1{font-family:'Dancing Script',cursive;color:var(--deep);font-size:40px;margin:0 0 10px}
+    .message-center p{font-family:'Dancing Script',cursive;color:#9b003f;font-size:20px;margin:0;line-height:1.5}
+
+    /* Falling words */
+    .falling{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:hidden}
+    .word{position:absolute;font-family:'Dancing Script',cursive;font-size:20px;color:#ff4f93;opacity:0.95;white-space:nowrap}
+
+    /* Controls */
+    .controls{position:fixed;right:18px;bottom:18px;z-index:60;display:flex;gap:10px}
+    .btn{background:linear-gradient(180deg,#fff,#ffeaf4);border:1px solid rgba(179,0,89,0.08);padding:8px 12px;border-radius:999px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.06);font-weight:600}
+
+    /* small responsive */
+    @media (max-width:720px){
+      .envelope{width:320px;height:230px}
+      .message-center h1{font-size:32px}
+      .message-center p{font-size:18px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="envelope" id="envelope" aria-label="Phong bì chúc mừng 20/10">
+      <div class="flap" id="flap" aria-hidden="true"></div>
+
+      <div class="inner-card" id="innerCard">
+        <h4>💌 Gửi Phương Linh</h4>
+        <p>Nhấn để mở thư và nhận lời chúc nhé ✨</p>
+      </div>
+    </div>
+
+    <!-- message that will slide up to center -->
+    <div class="message-center" id="messageCenter" role="dialog" aria-live="polite">
+      <h1>Chúc mừng 20/10</h1>
+      <p id="fullMessage">Nhân ngày 20/10, chúc Sin iu<br>luôn mạnh mẽ, tự tin và thật hạnh phúc.<br> Cảm ơn vì đã là một phần tuyệt vời trong thanh xuân của tôi 💗<br> Chúc các cậu luôn mỉm cười và đạt được mọi điều mình mong muốn! 🌻</p>
+    </div>
+
+    <!-- falling words container -->
+    <div class="falling" id="fallingContainer" aria-hidden="true"></div>
+
+    <!-- audio from local file -->
+    <audio id="bgMusic" src="mymusic.mp3" loop></audio>
+
+    <!-- controls: music toggle -->
+    <div class="controls">
+      <button class="btn" id="musicToggle" aria-pressed="false">🔈 Nhạc</button>
+      <button class="btn" id="restartBtn">🔁 Mở lại</button>
+    </div>
+  </div>
+
+  <script>
+    // Elements
+    const envelope = document.getElementById('envelope');
+    const flap = document.getElementById('flap');
+    const innerCard = document.getElementById('innerCard');
+    const messageCenter = document.getElementById('messageCenter');
+    const fallingContainer = document.getElementById('fallingContainer');
+    const musicToggle = document.getElementById('musicToggle');
+    const restartBtn = document.getElementById('restartBtn');
+    const bgMusic = document.getElementById('bgMusic');
+
+    // Words for falling effect (short phrases)
+    const words = [
+      'Xinh đẹp 🌷', 'Hạnh phúc 💖', 'Tự tin 🌟', 'Mạnh mẽ 💪', 'Yêu đời 🌈',
+      'Rạng rỡ 🌹', 'Vui vẻ 🎀', 'Thành công 💫', 'Bình an ☀️', 'Ngọt ngào 🍓'
+    ];
+
+    let opened = false;
+    let fallInterval = null;
+    let audioOn = false;
+
+    // Toggle music
+    musicToggle.addEventListener('click', () => {
+      if (!audioOn) {
+        bgMusic.play();
+        audioOn = true;
+        musicToggle.textContent = '🔊 Nhạc: Bật';
+        musicToggle.setAttribute('aria-pressed', 'true');
+      } else {
+        bgMusic.pause();
+        bgMusic.currentTime = 0;
+        audioOn = false;
+        musicToggle.textContent = '🔈 Nhạc';
+        musicToggle.setAttribute('aria-pressed', 'false');
+      }
+    });
+
+    // Envelope click -> open
+    envelope.addEventListener('click', async () => {
+      if (opened) return;
+      opened = true;
+
+      // open flap
+      envelope.classList.add('open');
+
+      // reveal inner card quickly
+      setTimeout(() => {
+        envelope.style.transition = 'opacity 700ms ease, transform 700ms ease';
+        envelope.style.opacity = '0';
+        envelope.style.transform = 'scale(0.96) translateY(-10px)';
+      }, 1200);
+
+      // after fade, hide envelope and show centered message
+      setTimeout(() => {
+        envelope.style.display = 'none';
+        showCenteredMessage();
+      }, 2000);
+
+      // start falling words slightly later
+      setTimeout(() => startFalling(), 2200);
+    });
+
+    function showCenteredMessage(){
+      messageCenter.classList.add('show');
+      messageCenter.setAttribute('tabindex','-1');
+      messageCenter.focus();
+    }
+
+    function startFalling(){
+      const spawnRate = 550; 
+      fallInterval = setInterval(() => {
+        createFallingWord();
+      }, spawnRate);
+    }
+
+    function createFallingWord(){
+      const w = document.createElement('div');
+      w.className = 'word';
+      w.textContent = words[Math.floor(Math.random()*words.length)];
+      const size = 16 + Math.random()*14;
+      w.style.fontSize = size + 'px';
+      const left = Math.random()*85 + 5;
+      w.style.left = left + 'vw';
+      w.style.top = (-5 - Math.random()*8) + 'vh';
+      const rot = (Math.random()*40 - 20) + 'deg';
+      w.style.transform = 'rotate(' + rot + ')';
+      const duration = 6 + Math.random()*6;
+      w.style.transition = 'transform ' + duration + 's linear, opacity ' + duration + 's linear';
+
+      fallingContainer.appendChild(w);
+
+      requestAnimationFrame(()=>{
+        w.style.transform = 'translateY(110vh) rotate(' + (Math.random()*720-360) + 'deg)';
+        w.style.opacity = '0';
+      });
+
+      setTimeout(()=>{ w.remove(); }, (duration*1000)+200);
+    }
+
+    // Restart button: reset everything
+    restartBtn.addEventListener('click', ()=>{
+      clearInterval(fallInterval);
+      fallingContainer.querySelectorAll('.word').forEach(n=>n.remove());
+      messageCenter.classList.remove('show');
+      envelope.style.display = '';
+      envelope.style.opacity = '';
+      envelope.style.transform = '';
+      envelope.classList.remove('open');
+      opened = false;
+      if (audioOn){
+        bgMusic.pause();
+        bgMusic.currentTime = 0;
+        audioOn = false;
+        musicToggle.textContent = '🔈 Nhạc';
+        musicToggle.setAttribute('aria-pressed','false');
+      }
+    });
+
+    // Accessibility: allow Enter/Space to open when focused
+    envelope.setAttribute('tabindex','0');
+    envelope.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' || e.key === ' ') { envelope.click(); e.preventDefault(); }
+    });
+  </script>
+</body>
+</html>
